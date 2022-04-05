@@ -537,14 +537,64 @@ int parse_fat_header(void* b, uint64_t* base) {
     return 0;
 }
 
-uint64_t map_file_offset_to_vaddr(uint64_t offset) {
+uint64_t map_file_offset_to_vaddr(void* b, uint64_t offset) {
+    struct mach_header_64   m_hdr_64;
+    int                     should_swap = 0;
+    uint64_t                current_offset = 0;
+
+    memcpy(&m_hdr_64, (void*)((uint64_t)b + current_offset), sizeof(struct mach_header_64));
+    current_offset += sizeof(struct mach_header_64);
+
+    for (unsigned int i = 0; i < m_hdr_64.ncmds; i++) {
+        struct load_command l_cmd;
+
+        memcpy(&l_cmd, (void*)((uint64_t)b + current_offset), sizeof(struct load_command));
+
+        if (l_cmd.cmd == LC_SEGMENT_64) {
+            struct segment_command_64   segment;
+            char                        *prot_str;
+
+            memcpy(&segment, (void*)((uint64_t)b + current_offset), sizeof(struct segment_command_64));
+
+            if (segment.fileoff <= offset && offset < (segment.fileoff + segment.filesize)) {
+                return offset - segment.fileoff + segment.vmaddr;
+            }
+        }
+
+        current_offset += l_cmd.cmdsize;
+    }
+
     return 0;
 }
 
-char* get_symbol_at(void* b, uint64_t file_offset) {
+char* get_symbol_at(void* b, uint64_t file_offset, uint64_t *ret_vaddr) {
     uint64_t vaddr;
 
-    vaddr = map_file_offset_to_vaddr(file_offset);
+    vaddr = map_file_offset_to_vaddr(b, file_offset);
+
+    if (vaddr == 0) {
+        return NULL;
+    }
+
+    //printf("Virtual address: 0x%llx\n", vaddr);
+    *ret_vaddr = vaddr;
+
+    struct mach_header_64   m_hdr_64;
+    int                     should_swap = 0;
+    uint64_t                current_offset = 0;
+
+    memcpy(&m_hdr_64, (void*)((uint64_t)b + current_offset), sizeof(struct mach_header_64));
+    current_offset += sizeof(struct mach_header_64);
+
+    for (unsigned int i = 0; i < m_hdr_64.ncmds; i++) {
+        struct load_command l_cmd;
+
+        memcpy(&l_cmd, (void*)((uint64_t)b + current_offset), sizeof(struct load_command));
+
+        if (l_cmd.cmd == LC_SEGMENT_64) {
+            
+        }
+    }
 
     return NULL;
 }

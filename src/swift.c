@@ -85,12 +85,16 @@ void parse_swift_class(void* b, ClassDescriptor *typeDesc) {
         char* MethodName = NULL;
         uint64_t MethodAddr;
 
-        MethodAddr = (uint64_t)get_addr_from_swift_relative_addr(&currentMethodDescriptor->Impl, currentMethodDescriptor->Impl) - (uint64_t)b;
+        //MethodAddr = (uint64_t)get_addr_from_swift_relative_addr(&currentMethodDescriptor->Impl, currentMethodDescriptor->Impl) - (uint64_t)b;
         
-        MethodName = get_symbol_at(b, (int64_t)&currentMethodDescriptor->Impl + (int32_t)currentMethodDescriptor->Impl - (int64_t)b);
+        MethodName = get_symbol_at(b, (int64_t)&currentMethodDescriptor->Impl + (int32_t)currentMethodDescriptor->Impl - (int64_t)b, &MethodAddr);
         
         if (MethodName) {
             printf("\t\tName: %s\n", MethodName);
+        }
+
+        if (MethodAddr != 0) {
+            printf("\t\tVirtual address: 0x%llx\n", MethodAddr);
         }
 
         printf("\t\tFlags: 0x%x\t", currentMethodDescriptor->Flags);
