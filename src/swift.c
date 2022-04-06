@@ -91,6 +91,7 @@ void parse_swift_class(void* b, ClassDescriptor *typeDesc) {
         
         if (MethodName) {
             printf("\t\tName: %s\n", MethodName);
+            printf("\t\tDemangled name: %s\n", "lele");
         }
 
         if (MethodAddr != 0) {

@@ -1,5 +1,5 @@
-# swift_class_dump
-Dumps Classes from Swift binaries. This might be useful for reverse-engineering Swift applications. Note that this is still a work-in-progress, so not all things might work as intended.
+# Swift Class Dumo
+Dumps Classes from Swift binaries (similar to classdump for Obj-C). This might be useful for reverse-engineering Swift applications. Note that this is still a work-in-progress, so not all things might work as intended.
 
 ## Building
 Build via `build.sh`.
@@ -7,34 +7,47 @@ Build via `build.sh`.
 ## Example
 An example output of `swift_class_dump`:
 ```
+$> ARCH=ARM ./dump_swift_classes Browser
+
 Class
 	Name: ViewController
 	FieldDescriptor:   0x29bc
 	Fields:
-		FieldName: 		webView
+		FieldName: 			webView
 		MangledTypeName: 	So9WKWebViewCSgXw
 
-		FieldName: 		progressBar
+		FieldName: 			progressBar
 		MangledTypeName: 	So14UIProgressViewCSgXw
 
-		FieldName: 		barView
+		FieldName: 			barView
 		MangledTypeName: 	So6UIViewCSgXw
 
-		FieldName: 		urlField
+		FieldName: 			urlField
 		MangledTypeName: 	So11UITextFieldCSgXw
 
-		FieldName: 		backButton
+		FieldName: 			backButton
 		MangledTypeName: 	So15UIBarButtonItemCSgXw
 
-		FieldName: 		forwardButton
+		FieldName: 			forwardButton
 		MangledTypeName: 	So15UIBarButtonItemCSgXw
 
-		FieldName: 		reloadButton
+		FieldName: 			reloadButton
 		MangledTypeName: 	So15UIBarButtonItemCSgXw
 
-		FieldName: 		urlStr
+		FieldName: 			urlStr
 		MangledTypeName: 	SS
 
 	Methods:
+		Virtual address: 0x100002688
+		Flags: 0x12	Getter | Instance
+		Impl:  0x2688
+
+		Virtual address: 0x100002738
+		Flags: 0x13	Setter | Instance
+		Impl:  0x2738
+
+		Virtual address: 0x1000028a0
+		Flags: 0x14	ModifyCoroutine | Instance
+		Impl:  0x28a0
     ...
 ```

@@ -2,6 +2,7 @@
 #include <macho.h>
 
 #include <string.h>
+#include <mach-o/nlist.h>
 
 int check_fat_byteswap(uint32_t magic) {
     if (magic == FAT_CIGAM_64 || magic == FAT_CIGAM) return 1;
@@ -539,7 +540,6 @@ int parse_fat_header(void* b, uint64_t* base) {
 
 uint64_t map_file_offset_to_vaddr(void* b, uint64_t offset) {
     struct mach_header_64   m_hdr_64;
-    int                     should_swap = 0;
     uint64_t                current_offset = 0;
 
     memcpy(&m_hdr_64, (void*)((uint64_t)b + current_offset), sizeof(struct mach_header_64));
@@ -552,7 +552,6 @@ uint64_t map_file_offset_to_vaddr(void* b, uint64_t offset) {
 
         if (l_cmd.cmd == LC_SEGMENT_64) {
             struct segment_command_64   segment;
-            char                        *prot_str;
 
             memcpy(&segment, (void*)((uint64_t)b + current_offset), sizeof(struct segment_command_64));
 
@@ -565,6 +564,29 @@ uint64_t map_file_offset_to_vaddr(void* b, uint64_t offset) {
     }
 
     return 0;
+}
+
+char* get_str_from_strtable(void* b, uint8_t strtbl_sect_nr, uint32_t idx) {
+    struct mach_header_64   m_hdr_64;
+    uint64_t                current_offset = 0;
+
+    memcpy(&m_hdr_64, (void*)((uint64_t)b + current_offset), sizeof(struct mach_header_64));
+    current_offset += sizeof(struct mach_header_64);
+
+    for (unsigned int i = 0; i < m_hdr_64.ncmds; i++) {
+        struct load_command l_cmd;
+        uint64_t            saved_offset;
+
+        saved_offset = current_offset;
+
+        memcpy(&l_cmd, (void*)((uint64_t)b + current_offset), sizeof(struct load_command));
+
+        if (i == strtbl_sect_nr) {
+            return (char*) ((uint64_t)b + current_offset + idx);
+        }
+    }
+
+    return NULL;
 }
 
 char* get_symbol_at(void* b, uint64_t file_offset, uint64_t *ret_vaddr) {
@@ -580,7 +602,6 @@ char* get_symbol_at(void* b, uint64_t file_offset, uint64_t *ret_vaddr) {
     *ret_vaddr = vaddr;
 
     struct mach_header_64   m_hdr_64;
-    int                     should_swap = 0;
     uint64_t                current_offset = 0;
 
     memcpy(&m_hdr_64, (void*)((uint64_t)b + current_offset), sizeof(struct mach_header_64));
@@ -588,13 +609,87 @@ char* get_symbol_at(void* b, uint64_t file_offset, uint64_t *ret_vaddr) {
 
     for (unsigned int i = 0; i < m_hdr_64.ncmds; i++) {
         struct load_command l_cmd;
+        uint64_t            saved_offset;
+
+        saved_offset = current_offset;
 
         memcpy(&l_cmd, (void*)((uint64_t)b + current_offset), sizeof(struct load_command));
 
-        if (l_cmd.cmd == LC_SEGMENT_64) {
-            
+        if (l_cmd.cmd == LC_SYMTAB) {
+            struct symtab_command   *s_cmd;
+            struct nlist_64         *ns;
+
+            //memcpy(&s_cmd, (void*)((uint64_t)b + current_offset), sizeof(struct symtab_command));
+            //current_offset += sizeof(struct symtab_command);
+
+            s_cmd = (struct symtab_command *)((uint64_t)b + current_offset);
+
+            //printf("s_cmd->stroff: 0x%llx\n", (uint64_t)s_cmd->stroff);
+            //printf("s_cmd->strsize: 0x%llx\n", (uint64_t)s_cmd->strsize);
+            //printf("s_cmd->nsyms: 0x%llx\n", (uint64_t)s_cmd->nsyms);
+            //printf("s_cmd->symoff: 0x%llx\n", (uint64_t)s_cmd->symoff);
+
+            ns = (struct nlist_64 *) ((uint64_t)b + s_cmd->symoff);
+
+            for (unsigned int i = 0; i < s_cmd->nsyms; i++) {
+                //printf("0x%llx\n", b);
+                //printf("0x%llx\n", ((uint64_t)b + s_cmd->stroff + ns->n_un.n_strx));
+                //printf("0x%llx\n", ns->n_un.n_strx);
+                //printf("0x%llx\n", ns->n_value);
+                //printf("%s\n", (char*)((uint64_t)b + s_cmd->stroff + ns->n_un.n_strx));
+
+                if (ns->n_value == vaddr) {
+                    char *sym_name;
+
+                    sym_name = (char*)((uint64_t)b + s_cmd->stroff + ns->n_un.n_strx);
+
+                    //printf("found it!!!!\n");
+                    //printf("0x%llx\n", ns->n_un.n_strx);
+                    //printf("%s\n", (char*)((uint64_t)b + s_cmd->stroff + ns->n_un.n_strx));
+
+                    // There might be multiple definitions of a symbol for the
+                    // same address. We choose the one with a appropriate string
+                    // length.
+                    if (strlen(sym_name) > 1) {
+                        return (char*)((uint64_t)b + s_cmd->stroff + ns->n_un.n_strx);
+                    }
+                }
+
+                ns++;
+            }
+
+            //nlist_64
         }
+
+        if (l_cmd.cmd == LC_DYSYMTAB) {
+        }
+
+        current_offset = saved_offset;
+        current_offset += l_cmd.cmdsize;
     }
 
     return NULL;
+}
+
+char* demangle_symbol(char* symbol){
+    FILE *fp;
+    char demangled_symbol[1024];
+
+    char* cmd = (char*)malloc(2048);
+    strcpy(cmd, "swift demangle -compact -simplified ");
+    cmd = strcat(cmd, symbol);
+
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+        printf("Failed to run command\n" );
+        exit(1);
+    }
+
+    while (fgets(demangled_symbol, sizeof(demangled_symbol), fp) != NULL) {
+        printf("%s", demangled_symbol);
+    }
+
+    pclose(fp);
+
+    return demangled_symbol;
 }

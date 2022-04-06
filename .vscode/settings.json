@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "macho.h": "c",
+        "loader.h": "c"
+    }
+}
