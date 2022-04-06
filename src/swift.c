@@ -2,6 +2,8 @@
 #include <macho.h>
 #include <swift.h>
 
+#include <string.h>
+
 SwiftType GetSwiftType(uint32_t Flags) {
     return (SwiftType)(Flags & 0x1Fu);
 }
@@ -91,7 +93,13 @@ void parse_swift_class(void* b, ClassDescriptor *typeDesc) {
         
         if (MethodName) {
             printf("\t\tName: %s\n", MethodName);
-            printf("\t\tDemangled name: %s\n", "lele");
+            
+            char *demangled_symbol = demangle_symbol(MethodName);
+
+            if (demangled_symbol != NULL) {
+                printf("\t\tDemangled name: %s\n", demangled_symbol);
+                free(demangled_symbol);
+            }
         }
 
         if (MethodAddr != 0) {
@@ -159,4 +167,66 @@ void parse_swift_enum(EnumDescriptor *typeDesc) {
         FieldDescriptor *fieldDesc = get_addr_from_swift_relative_addr(&typeDesc->FieldDescriptor, typeDesc->FieldDescriptor);
         parse_swift_field_descriptor(fieldDesc);
     }
+}
+
+void insertString(char* dst, int pos, char* insert, size_t max_size)
+{
+    char *dst_new;
+
+    if (pos >= max_size) {
+        return;
+    }
+
+    dst_new = (char*) malloc(strlen(dst) + strlen(insert) + 1);
+    strncpy(dst_new, dst, pos);
+    dst_new[pos] = '\0';
+    strncat(dst_new, insert, max_size);
+    strncat(dst_new, dst + pos, max_size);
+    strncpy(dst, dst_new, max_size);
+    free(dst_new);
+}
+
+char* demangle_symbol(char* symbol) {
+    FILE *fp;
+    char *buf = malloc(1024);
+    char *demangled_symbol = malloc(1024);
+    char *escaped_symbol = malloc(1024);
+    strncpy(escaped_symbol, symbol, 1024);
+
+    for (unsigned int i = 1; i < strlen(escaped_symbol); i++) {
+        if (escaped_symbol[i] == '$') {
+            insertString(escaped_symbol, i, "\\", 1024);
+            i++;
+        }
+    }
+
+    char* cmd = (char*)malloc(2048);
+    strncpy(cmd, "swift demangle -compact -simplified ", 2048);
+    cmd = strcat(cmd, escaped_symbol);
+
+    //printf("Running cmd: %s\n", cmd);
+
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+        printf("Failed to run command\n" );
+        exit(1);
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        strncat(demangled_symbol, buf, 1024);
+    }
+
+    pclose(fp);
+
+    if (strcmp(demangled_symbol, "_\n") == 0) {
+        return NULL;
+    }
+
+    if (demangled_symbol[strlen(demangled_symbol) - 1] == '\n') {
+        demangled_symbol[strlen(demangled_symbol) - 1] = 0;
+    }
+
+    //printf("%s", demangled_symbol);
+
+    return demangled_symbol;
 }

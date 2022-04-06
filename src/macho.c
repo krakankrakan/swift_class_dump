@@ -670,26 +670,3 @@ char* get_symbol_at(void* b, uint64_t file_offset, uint64_t *ret_vaddr) {
 
     return NULL;
 }
-
-char* demangle_symbol(char* symbol){
-    FILE *fp;
-    char demangled_symbol[1024];
-
-    char* cmd = (char*)malloc(2048);
-    strcpy(cmd, "swift demangle -compact -simplified ");
-    cmd = strcat(cmd, symbol);
-
-    fp = popen(cmd, "r");
-    if (fp == NULL) {
-        printf("Failed to run command\n" );
-        exit(1);
-    }
-
-    while (fgets(demangled_symbol, sizeof(demangled_symbol), fp) != NULL) {
-        printf("%s", demangled_symbol);
-    }
-
-    pclose(fp);
-
-    return demangled_symbol;
-}

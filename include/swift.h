@@ -148,3 +148,5 @@ MethodKind GetMethodKind(uint32_t Flags);
 int isDynamic(uint32_t Flags);
 int isInstance(uint32_t Flags);
 int isAsync(uint32_t Flags);
+
+char* demangle_symbol(char* symbol);
