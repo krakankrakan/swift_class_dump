@@ -212,6 +212,8 @@ char* demangle_symbol(char* symbol) {
         exit(1);
     }
 
+    memset(demangled_symbol, 0, 1024);
+
     while (fgets(buf, sizeof(buf), fp) != NULL) {
         strncat(demangled_symbol, buf, 1024);
     }

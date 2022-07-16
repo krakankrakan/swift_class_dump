@@ -1,2 +1,4 @@
 .DS_Store
 dump_swift_classes
+dump_swift_classes.dSYM
+.vscode

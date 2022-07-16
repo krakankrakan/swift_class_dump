@@ -67,18 +67,22 @@ int main(int argc, char** argv) {
     for (unsigned int i = 0; i < (__swift5_types_section->size / sizeof(uint32_t)); i++) {
         DEBUG_PRINTF("__swift5_types_section->offset: 0x%llx\n", (uint64_t)__swift5_types_section->offset);
 
-
         uint64_t section_data = (uint64_t)new_base + __swift5_types_section->offset;
         uint32_t *type_ptr = &((uint32_t*)(section_data + i * sizeof(uint32_t)))[i];
 
-        //DEBUG_PRINTF("0x%llx\n", (uint64_t)type_ptr);
-        //DEBUG_PRINTF("0x%x\n", *type_ptr);
+        DEBUG_PRINTF("0x%llx\n", (int64_t)type_ptr);
+        DEBUG_PRINTF("0x%x\n", (int32_t)*type_ptr);
 
         TargetContextDescriptor *typeDesc = (TargetContextDescriptor*)((int64_t)type_ptr + (int32_t)*type_ptr); //(uint32_t*) (section_data + i * sizeof(uint32_t) + ((uint32_t*)section_data)[i]);
 
-        //DEBUG_PRINTF("nominalTypeDesc: 0x%llx\n", (uint64_t)typeDesc);
+        DEBUG_PRINTF("nominalTypeDesc: 0x%llx\n", (uint64_t)typeDesc);
         //DEBUG_PRINTF("%x\n%x\n", typeDesc->Flags, typeDesc->Parent);
         //DEBUG_PRINTF("0x%x\n", GetSwiftType(typeDesc->Flags));
+
+        if (!((uint64_t)typeDesc >= (uint64_t)new_base && (uint64_t)typeDesc <= (uint64_t)new_base + fsize)) {
+            printf("Could not parse type descriptor\n");
+            continue;
+        }
 
         switch (GetSwiftType(typeDesc->Flags)) {
             case Class:

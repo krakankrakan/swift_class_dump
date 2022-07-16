@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <mach-o/loader.h>
 
-#define DEBUG   0
+#define DEBUG   1
 #define DEBUG_PRINTF(fmt, ...) \
             do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
 

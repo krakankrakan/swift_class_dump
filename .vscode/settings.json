@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "macho.h": "c",
-        "loader.h": "c",
-        "random": "c",
-        "*.tcc": "c"
-    }
-}
