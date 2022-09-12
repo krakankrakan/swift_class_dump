@@ -72,8 +72,11 @@ void parse_swift_class(void* b, ClassDescriptor *typeDesc) {
         ClassDescriptor *superTypeDesc = get_addr_from_swift_relative_addr(&typeDesc->SuperclassType, typeDesc->SuperclassType);
         char *super_class_name = get_addr_from_swift_relative_addr(&superTypeDesc->Name, superTypeDesc->Name);
 
-        //printf("\tSuperclass Name:   %s\n", super_class_name);
+        printf("\tSuperclass Name:   %s\n", super_class_name);
     }
+
+    printf("\tVTableOffset:   0x%x\n", typeDesc->VTableOffset);
+    printf("\tVTableSize:   0x%x\n", typeDesc->VTableSize);
 
     printf("\tFieldDescriptor:   0x%x\n", typeDesc->FieldDescriptor);
     if (typeDesc->FieldDescriptor != 0) {
